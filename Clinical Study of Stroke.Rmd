@@ -1,0 +1,572 @@
+---
+title: "CLINICAL STUDY OF STROKE"
+author: "WAKASALA NOBERT"
+date: "2025-02-07"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Load the necessary libraries
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(performance)
+library(ggeffects)
+library(ggcorrplot)
+library(equatiomatic)
+library(sjPlot)
+library(gtsummary)
+library(report)
+library(vip)
+library(car)
+library(pROC)
+```
+
+## Load and inspect the dataset
+```{r warning=FALSE, message=FALSE}
+data <- read_csv("C:/Users/PC/OneDrive/Desktop/Data Science/Datasets/Datasets/Stroke.csv")
+glimpse(data)
+anyNA(data)
+duplicated(data) %>% table()
+```
+
+## Data Preparation
+```{r warning=FALSE, message=FALSE}
+# Convert categorical variables to factors
+categorical_vars <- c("hypertension", "heart_disease", "stroke")
+data[categorical_vars] <- lapply(data[categorical_vars], as.factor)
+data <- data %>% mutate_if(is.character, as.factor)
+```
+
+# Convert bmi to numeric
+```{r warning=FALSE, message=FALSE}
+data$bmi <- as.factor(data$bmi)
+data$bmi <- as.numeric(data$bmi)
+```
+
+# Create bmi, age and glucose Levels for intuitive study
+```{r warning=FALSE, message=FALSE}
+data$BMI <- ifelse(data$bmi<18.5, "Underweight",
+                       ifelse(data$bmi>=18.5&data$bmi<25, "Normal Weight",
+                              ifelse(data$bmi>=25&data$bmi<30, "Overweight",
+                                     ifelse(data$bmi>=30&data$bmi<40, "Obese", "Severely Obese"))))
+data$Age <- ifelse(data$age <= 30, "Young",
+                   ifelse(data$age > 30&data$age<=60, "Middle Age", "Old"))
+data$glucose <- ifelse(data$avg_glucose_level >=70&data$avg_glucose_level<=100, "Normal", "Abnormal")
+```
+
+## Univariate Analysis
+## Summary statistics for numeric variables
+```{r warning=FALSE, message=FALSE}
+data %>% select(age, avg_glucose_level, bmi) %>% summary()
+```
+
+## Majority of the participants were middle aged
+## Majority of the participants had an average glucose level of 106.15 which is slightly abnormal.
+## Majority of the participants were severely obese which pose them at high risk of developing stroke.
+
+
+## Frequency distributions for numeric variables
+## Theme set
+```{r warning=FALSE, message=FALSE}
+theme_set(theme_classic()+theme(title = element_text
+                           (face = "bold", 
+                             colour = "steelblue")))
+```
+
+## Age
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(age))+
+  geom_histogram(fill = "purple", color = "red", bins = 15)+
+  ggtitle("Distribution of Participants based on Age")
+
+ggplot(data, aes(age))+
+  geom_density(fill = "purple", color = "red")+
+  ggtitle("Distribution of Participants based on Age")
+```
+
+## Average glucose level
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(avg_glucose_level))+
+  geom_histogram(fill = "purple", color = "red", bins = 15)+
+  ggtitle("Distribution of Participants based on Average glucose level")
+
+ggplot(data, aes(avg_glucose_level))+
+  geom_density(fill = "purple", color = "red")+
+  ggtitle("Distribution of Participants based on Average glucose level")
+```
+
+
+## BMI
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(bmi))+
+  geom_histogram(fill = "purple", color = "red", bins = 15)+
+  ggtitle("Distribution of Participants based on BMI")
+```
+
+
+## Frequency distributions for categorical variables
+## Age groups
+```{r warning=FALSE, message=FALSE}
+table(data$Age)
+ggplot(data, aes(Age))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on Age")
+```
+
+## Majority of the participants were middle aged followed by old then young
+
+
+## BMI Levels
+```{r warning=FALSE, message=FALSE}
+table(data$BMI)
+ggplot(data, aes(BMI))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on BMI")
+```
+
+## Majority of the participants were severely obese followed by obese, underweight, overweight and then normal weight.
+
+## Glucose levels
+```{r warning=FALSE, message=FALSE}
+table(data$glucose)
+ggplot(data, aes(glucose))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on glucose")
+```
+
+## Participants who had normal glucose level were slightly higher compare to those who had abnormal blood glucose level
+
+## Gender
+```{r warning=FALSE, message=FALSE}
+table(data$gender)
+ggplot(data, aes(gender))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on Gender")
+```
+
+## Majority of the participants were female follewed by male then the other genger.
+
+## Hypertention
+```{r warning=FALSE, message=FALSE}
+table(data$hypertension)
+ggplot(data, aes(hypertension, fill = hypertension))+
+  geom_bar()+
+  ggtitle("Distribution of participants based on Hypertention")+
+  scale_fill_discrete(name = "hypertension", labels = c("Negative", "Positive"))
+```
+
+## 498 participants had high blood pressure while 4612 did not have.
+
+## Heart Disease
+```{r warning=FALSE, message=FALSE}
+table(data$heart_disease)
+ggplot(data, aes(heart_disease, fill = heart_disease))+
+  geom_bar()+
+  ggtitle("Distribution of participants based on heart disease")+
+  scale_fill_discrete(name = "heart_disease", labels = c("Negative", "Positive"))
+```
+
+## Few participants had heart disease compared to those who did not have.
+
+## Ever Married
+```{r warning=FALSE, message=FALSE}
+table(data$ever_married)
+ggplot(data, aes(ever_married))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on Marital status")
+```
+
+## Majority of the participants had once in there lifetime been married.
+
+## Work type
+```{r warning=FALSE, message=FALSE}
+table(data$work_type)
+ggplot(data, aes(work_type))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on work type")
+```
+
+## Majority of the participants were working privately followed by self employed, government jobs e.t.c.
+
+## Residence type
+```{r warning=FALSE, message=FALSE}
+table(data$Residence_type)
+ggplot(data, aes(Residence_type))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on Residence type")
+```
+
+## Majority of the population were living in urban areas compared to those in rural areas.
+
+## Smoking status
+```{r warning=FALSE, message=FALSE}
+table(data$smoking_status)
+ggplot(data, aes(smoking_status))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on smoking status")
+```
+
+
+## Majority of the participants have not in there lifetime smoked.
+
+## Stroke
+```{r warning=FALSE, message=FALSE}
+table(data$stroke)
+ggplot(data, aes(stroke))+
+  geom_bar(fill = "purple", color = "red")+
+  ggtitle("Distribution of participants based on stroke")
+```
+
+## Majority of the participants did not have stroke compared to those who had. This indicates class imbalance which may affect our research study of stroke. 
+
+## Bivariate Analysis
+## Correlation
+
+```{r warning=FALSE, message=FALSE}
+cr <- data %>% select(age, bmi, avg_glucose_level) %>% cor()
+ggcorrplot(cr,title = "Correlation Matrix",lab_col = "black",
+           lab = TRUE, legend.title = "Pearson Correlation",
+           lab_size = 3, ggtheme = theme_classic(),
+           outline.color = "black",
+           colors = c("orange", "green", "blue"))
+```
+
+## There was a weak positive relationship among the numeric variables indicating no autocorrelation and multicollinearity.
+
+## Chi-square
+## Is there any relationship between Gender and stroke
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$gender)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is no statistically significant association between gender and stroke indicted by a p-value greater than 0.05.
+
+## Is there any relationship between stroke and hypertension
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$hypertension)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## The test yielded a Chi-square statistic of 81.605 representing how much the observed data deviates from what would be expected if there were no relationship between the variables being studied. The high value indicates a strong association between the two variables. The extremely low p-value indicates a high significant association between the variables. This suggests that there is a substantial connection between hypertension and stroke.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(hypertension, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Hypertension")
+```
+
+
+## Is there any association between stroke and heart disease
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$heart_disease)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is a strong statistically significant association between stroke and heart disease evidenced by the p-value less than 0.05 and a higher chi-square value. This suggests that heart disease is closely linked to stroke.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(heart_disease, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Heart Disease")
+```
+
+## Is there any association between stroke and smoking status
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$smoking_status)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is a strong statistically significant association between stroke and smoking status evidenced by smaller p-value less than 0.05 and a higher chi-square value.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(smoking_status, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Smoking status")
+```
+
+
+## Is there any relationship between stroke and marital status
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$ever_married)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is a statistically significant association between stroke and marital status evidenced by a p-valu less than 0.05 and a higher chi-square value. This strongly suggests that marital status is substantially connected to stroke.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(ever_married, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs marital status")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between stroke and working status
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$work_type)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is a statistically significant association batween work type and stroke enidenced by a p-value less than 0.05 and a higher chi-square value. This suggests that work type has a substantial influence on stroke.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(work_type, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs working status")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between stroke and Residence type
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$Residence_type)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is no statistically significant association batween residential type and stroke evidenced by a higher p-value greater than 0.05 and a lower chi-square statistic.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(Residence_type, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Residence type")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between stroke and Age groups
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$Age)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is a statistically significant association between age groups and stroke evidenced by a p-value less than 0.05 and a higher chi-square value. 
+
+
+```{r warning=FALSE, message=FALSE}
+## Visualize your results
+ggplot(data, aes(Age, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Age groups")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between stroke and BMI levels
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$BMI)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+## There is no statistically significant association between BMI levels and stroke evidenced by a higher p-value greater than 0.05 and a smaller chi-square value.
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(BMI, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs BMI Levels")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between stroke and Glucose levels
+```{r warning=FALSE, message=FALSE}
+contingency_table <- table(data$stroke, data$glucose)
+contingency_table
+chi_square <- chisq.test(contingency_table)
+print(chi_square)
+```
+
+
+## There is a strong statistically significant association between glucose levels and stroke evidenced by a smaller p-value less than 0.05 and a higher chi-square statistic.
+
+
+## Visualize your results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(glucose, fill = stroke))+
+  geom_bar(position = "dodge")+
+  ggtitle("Stroke vs Glucose Levels")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## T-test
+## Is there any relationship between age and stroke
+```{r warning=FALSE, message=FALSE}
+t.test(age~stroke, data = data)
+```
+
+## The p-value associated with age is very small indicating a strong statistical significance. This suggests that there is a statistically significant difference in age between stroke status. Different stroke status are likely to have different age groups.
+
+## Visualize our results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(stroke, age, fill = stroke))+
+  geom_boxplot()+
+  ggtitle("Age vs Stroke")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between bmi and stroke
+```{r warning=FALSE, message=FALSE}
+t.test(bmi~stroke, data = data)
+```
+
+
+## The p-value associated with bmi is very small indicating a strong statistical significance. This suggests that there is a statistically significant difference in bmi between stroke status. Different stroke status are likely to have different bmi levels.
+
+## Visualize our results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(stroke, bmi, fill = stroke))+
+  geom_boxplot()+
+  ggtitle("BMI vs Stroke")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Is there any relationship between average glucose level and stroke
+```{r warning=FALSE, message=FALSE}
+t.test(avg_glucose_level~stroke, data = data)
+```
+
+
+## The p-value associated with average glucose level is very small indicating a strong statistical significance. This suggests that there is a statistically significant difference in average glucose level between stroke status. Different stroke status are likely to have different average glucose levels.
+
+## Visualize our results
+```{r warning=FALSE, message=FALSE}
+ggplot(data, aes(stroke, avg_glucose_level, fill = stroke))+
+  geom_boxplot()+
+  ggtitle("Avg glucose level vs Stroke")+
+  scale_fill_discrete(name = "stroke", labels = c("Negative", "Positive"))
+```
+
+
+## Multivariate Analysis
+## Data Preparation
+```{r warning=FALSE, message=FALSE}
+data$Age <- NULL
+data$BMI <- NULL
+data$glucose <- NULL
+data$id <- NULL
+```
+
+
+## Implement the logistic regression model
+```{r warning=FALSE, message=FALSE}
+model <- glm(stroke~., data = data, family = binomial)
+summary(model)
+```
+
+
+## Optimize the model
+```{r warning=FALSE, message=FALSE}
+modela <- glm(stroke~age+hypertension+work_type+avg_glucose_level+bmi, data = data, family = binomial)
+```
+
+
+## Checkmodela## Check model assumtions
+## Goodness of fit
+```{r warning=FALSE, message=FALSE}
+check_predictions(modela) %>% plot()
+```
+
+
+## The models predicted values includes the observed data points.
+
+## Multicollinearity
+```{r warning=FALSE, message=FALSE}
+check_collinearity(modela)
+```
+
+
+## Homodesdasticity
+```{r warning=FALSE, message=FALSE}
+check_residuals(modela) %>% plot()
+```
+
+## The residuals are uniformly distributed.
+
+## Outliers
+```{r warning=FALSE, message=FALSE}
+check_outliers(modela)
+check_outliers(modela) %>% plot()
+```
+
+
+## Check the models predicted probabilities
+```{r warning=FALSE, message=FALSE}
+ggeffect(model)
+```
+
+
+## Visualize the models predicted probabilities
+```{r warning=FALSE, message=FALSE}
+ggeffect(modela) %>% plot() %>% sjPlot::plot_grid()
+```
+
+
+## Check for odds ratios
+```{r warning=FALSE, message=FALSE}
+fancy_table <- tbl_regression(
+  modela, exponentiate = TRUE,
+  add_pairwise_contrasts = TRUE,
+  contrasts_adjust = "bonferroni",
+  pairwise_reverse = TRUE,
+  pvalue_fun = ~style_pvalue(.x, digits = 3)) %>% 
+  add_significance_stars(hide_p = F, hide_se = T,
+                         hide_ci = F) %>% 
+  bold_p()
+fancy_table
+```
+
+## For every one unit change in age, the chances of developing stroke increases by 1.08. This difference is statistically significant.
+## People with hypertension have 1.37 higher odds of developing stroke compred to those without hypertension.
+## People who have government jobs have 0.19 lower odds of developing stroke compared to children.
+## People who work privately have 1.18 higher odds of developing stroke compred to government workers.
+## People who work privately have 8733 higher odds of developing stroke compred to those not working.
+## The average change in odds of developing stroke for one unit change in average glucose level leads to 1.00 change in chances of developing stroke. The difference is statistically significant.
+## For every one unit change in bmi, the odds of developing stroke increases by 1.00. The difference is statistically significant.
+## Check feature importance
+```{r warning=FALSE, message=FALSE}
+car::Anova(modela)
+vip(modela)
+```
+
+## Age and BMI appeared to be the top predictors of stroke while work type the least predictor of stroke.
+
+## How well is the model in making predictions
+```{r warning=FALSE, message=FALSE}
+roc(stroke~fitted.values(modela), data = data,
+    plot = TRUE, legacy.axes = TRUE, 
+    print.auc = TRUE, ci = TRUE)
+```
+
+## The model had an AUC of 0.853 making it an excellent tool in classification of stroke.
