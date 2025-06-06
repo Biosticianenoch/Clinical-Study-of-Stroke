@@ -93,5 +93,5 @@ Thanks to the open-source R community and the contributors of the stroke dataset
 ## 🔗 Connect With Me
 
 📧 Email: enochosenwafulah@gmail.com 
-💼 LinkedIn: [Wakasala Nobert](https://www.linkedin.com/in/enock-bereka)  
-🌐 Website: (https://dqs-git-main-enocks-projects-27f604c8.vercel.app/)
+💼 LinkedIn: [Enock Bereka](https://www.linkedin.com/in/enock-bereka)  
+🌐 Website: [Visit my Website](https://dqs-git-main-enocks-projects-27f604c8.vercel.app/)
