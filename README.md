@@ -1,7 +1,7 @@
 
 # 🧠 Clinical Study of Stroke  
 ### _Data Analysis & Predictive Modeling in R_  
-**By Wakasala Nobert & Enock Bereka**  
+**Enock Bereka**  
 📅 **Completed: February 7, 2025**
 
 ---
@@ -92,6 +92,6 @@ Thanks to the open-source R community and the contributors of the stroke dataset
 
 ## 🔗 Connect With Me
 
-📧 Email: nobertwakasala@gmail.com  
-💼 LinkedIn: [Wakasala Nobert](https://www.linkedin.com/in/your-profile)  
-🌐 Website: [Coming soon on Vercel 🚀]
+📧 Email: enochosenwafulah@gmail.com 
+💼 LinkedIn: [Wakasala Nobert](https://www.linkedin.com/in/enock-bereka)  
+🌐 Website: (https://dqs-git-main-enocks-projects-27f604c8.vercel.app/)
