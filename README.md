@@ -69,7 +69,7 @@ This project presents an extensive **clinical data analysis of stroke** using R.
 
 ---
 
-## 📂 Folder Structure (Suggested for GitHub)
+## 📂 Folder Structure
 
 ```
 /clinical-study-stroke
